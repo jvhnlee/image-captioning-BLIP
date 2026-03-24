@@ -1,16 +1,32 @@
 import requests
 import numpy as np
+import gradio
+import io
 from PIL import Image
 from transformers import AutoProcessor, BlipForConditionalGeneration
-import gradio
+
 
 # Initialize BLIP components - processor to tokenize input and model to generate caption
 processor = AutoProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
 model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
 
-def caption_image(input_image: np.ndarray):
-    # Convert the np img to PIL Image then convert to RGB format
-    raw_image = Image.fromarray(input_image).convert('RGB')
+def handle_image(input_image):
+    if isinstance(input_image, np.ndarray):
+        raw_image = Image.fromarray(input_image).convert('RGB')
+    elif isinstance(input_image, Image.Image):
+        raw_image = input_image.convert('RGB')
+    elif isinstance(input_image, bytes):
+        raw_image = Image.open(io.BytesIO(input_image)).convert('RGB')
+    elif isinstance(input_image, str):
+        raw_image = Image.open(input_image).convert('RGB')
+    else:
+        raise ValueError("Unsupported input type")
+
+    return raw_image
+
+def caption_image(input_image):
+    # Handle image
+    raw_image = handle_image(input_image)
 
     # Set the input for the processor
     text = "the image of "
